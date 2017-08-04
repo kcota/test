@@ -1,0 +1,49 @@
+var embedder = (function () {
+
+var klass = function (file, mapping) {
+this.file = file;
+this.inputNewLine = String.fromCharCode(10);
+this.lines = [];
+this.mapping = mapping;
+this.groups = activeDocument.groupItems;
+};
+
+klass.prototype.readCSVFile = function () {
+var file = new File(this.file);
+if (!file.open('r', '', '')) return;
+
+var text = file.read();
+var lines = text.split(this.inputNewLine).reverse();
+for (var i = 0; i < lines.length; i++) {
+if (!lines[i]) continue; // 空行は除く
+this.lines.push(lines[i].split(','));
+}
+file.close();
+};
+klass.prototype.embedText = function () {
+this.readCSVFile();
+
+for (var i = 0; i < this.groups.length; i++) {
+var textFrames = this.groups[i].textFrames;
+
+for (var j = 0; j < textFrames.length; j++) {
+var field = this.mapping[textFrames[j].contents];
+textFrames[j].contents = this.lines[i][field];
+}
+}
+}
+
+return klass;
+})();
+
+(function () {
+var file = File.openDialog("CSVファイルを選択してください");
+if (!file) return;
+
+var e = new embedder(file, {
+'名前': 0,
+'役職': 1,
+'会社名': 2
+});
+e.embedText();
+})();
